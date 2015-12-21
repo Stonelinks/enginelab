@@ -13,6 +13,17 @@ var app = express();
 var five = require("johnny-five");
 var board = new five.Board();
 
+var cam = require('linuxcam');
+var Jpeg = require('jpeg-fresh').Jpeg;
+cam.start("/dev/video1", 620, 480);
+var cameraFrame = null;
+setInterval(function () {
+    var frame = cam.frame();
+    var jpeg = new Jpeg(frame.data, frame.width, frame.height, 'rgb');
+    var jpeg_frame = jpeg.encodeSync();
+    cameraFrame = jpeg_frame.toString('base64')
+}, 200);
+
 var server = http.createServer(app);
 
 var io = socket_io();
@@ -30,6 +41,7 @@ board.on("ready", function() {
 
     var servoPos = 90;
     servo.to(servoPos);
+
     io.on('connection', function (socket) {
         socket.on('sync', function () {
             console.log('sync');
@@ -46,6 +58,16 @@ board.on("ready", function() {
                 value: servoPos
             })
         });
+
+        var cameraInterval = setInterval(function () {
+            socket.emit("frame", {
+                frame: cameraFrame
+            });
+        }, 200);
+
+        socket.on('disconnect', function () {
+            clearInterval(cameraInterval)
+        })
     });
 
     server.listen(WEBSERVER_PORT);

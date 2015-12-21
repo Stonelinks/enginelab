@@ -23,7 +23,21 @@ var ServoModel = Backbone.Model.extend({
     }
 });
 
+var CameraModel = Backbone.Model.extend({
+    defaults: {
+        frame: null
+    },
+
+    initialize: function () {
+        io.on('frame', function (data) {
+            console.log('frame')
+            this.set(data)
+        }.bind(this))
+    }
+});
+
 var servo = new ServoModel();
+var camera= new CameraModel();
 io.emit('sync');
 
 var RowView = Marionette.LayoutView.extend({
@@ -49,6 +63,20 @@ var RowView = Marionette.LayoutView.extend({
         }.bind(this));
     }
 });
+
+
+var CameraView = Marionette.ItemView.extend({
+    template: require('../tmpl/camera.hbs'),
+
+    modelEvents: {
+        'change': 'render'
+    },
+
+    onRender: function() {
+        this.$el.find('img').attr('src', 'data:image/jpg;base64,' + this.model.get('frame'));
+    }
+});
+
 
 var SliderView = Marionette.ItemView.extend({
     template: require('../tmpl/slider.hbs'),
@@ -131,6 +159,9 @@ var Pages = {
                     onShow: function () {
                         this.setValue()
                     },
+                }),
+                CameraView.extend({
+                    model: camera
                 })
             ]
         });
