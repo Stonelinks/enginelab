@@ -1,0 +1,39 @@
+{
+  "name": "enginelab",
+  "version": "0.0.0",
+  "description": "Engine experiments",
+  "author": "Lucas Doyle",
+  "main": "",
+  "license": "ISC",
+  "browserify": {
+    "transform": [
+      "hbsfy"
+    ]
+  },
+  "devDependencies": {
+    "browserify": "8.1.1",
+    "gulp": "3.9.0",
+    "gulp-clean": "0.3.1",
+    "gulp-less": "3.0.3",
+    "gulp-rename": "1.2.0",
+    "gulp-sourcemaps": "1.3.0",
+    "gulp-tap": "0.1.3",
+    "gulp-webserver": "0.9.1",
+    "handlebars": "2.0.0",
+    "vinyl-buffer": "1.0.0",
+    "vinyl-source-stream": "1.0.0"
+  },
+  "dependencies": {
+    "backbone": "1.1.2",
+    "backbone.marionette": "2.3.2",
+    "bootstrap": "3.3.2",
+    "express": "4.13.3",
+    "hbsfy": "2.2.1",
+    "highcharts-browserify": "0.1.5",
+    "jquery": "2.1.4",
+    "moment": "2.10.3",
+    "socket.io": "1.3.7",
+    "socket.io-client": "1.3.7",
+    "underscore": "1.8.3"
+  }
+}
