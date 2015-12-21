@@ -9,7 +9,7 @@ Backbone.$ = window.$ = window.jQuery = $;
 var Marionette = require('backbone.marionette');
 require('bootstrap');
 
-var io = require('socket.io-client')(window.location.origin)
+var io = require('socket.io-client')(window.location.origin);
 
 var ServoModel = Backbone.Model.extend({
     defaults: {
@@ -21,9 +21,10 @@ var ServoModel = Backbone.Model.extend({
             this.set(data)
         }.bind(this))
     }
-})
+});
 
-var servo = new ServoModel()
+var servo = new ServoModel();
+io.emit('sync');
 
 var RowView = Marionette.LayoutView.extend({
     template: require('../tmpl/row.hbs'),
@@ -53,7 +54,7 @@ var SliderView = Marionette.ItemView.extend({
     template: require('../tmpl/slider.hbs'),
 
     min: 0,
-    max: 255,
+    max: 180,
     step: 1,
 
     templateHelpers: function () {
@@ -65,26 +66,28 @@ var SliderView = Marionette.ItemView.extend({
     },
 
     events: {
-        'change input': 'updateValue',
+        'change input': 'onUIChange',
         'mousedown input': 'startPolling',
-        'mouseup input': 'stopPolling'
+        'mouseup input': 'stopPolling',
+        'touchstart input': 'startPolling',
+        'touchend input': 'stopPolling'
     },
 
     value: null,
-    updateValue: function () {
-        this.value = parseInt(this.$el.find('input').val())
+    onUIChange: function () {
+        this.value = parseInt(this.$el.find('input').val());
         this.$el.find('small').text(this.value)
     },
 
-    setSlider: function (value) {
-        this.value = parseInt(value)
-        this.$el.find('input').val(this.value)
+    setValue: function (value) {
+        this.value = parseInt(value);
+        this.$el.find('input').val(this.value);
         this.$el.find('small').text(this.value)
     },
 
     _pollingInterval: null,
     startPolling: function () {
-        this._pollingInterval = setInterval(this.updateValue.bind(this), 300)
+        this._pollingInterval = setInterval(this.onUIChange.bind(this), 100)
     },
 
     stopPolling: function () {
@@ -92,7 +95,7 @@ var SliderView = Marionette.ItemView.extend({
     },
 
     onShow: function () {
-        this.updateValue()
+        this.onUIChange()
     },
 
     onDestroy: function () {
@@ -107,38 +110,41 @@ var Pages = {
         var HomePage = RowView.extend({
             childViews: [
                 SliderView.extend({
-                    updateValue: function () {
-                        SliderView.prototype.updateValue.apply(this, arguments)
-                        console.log(this.value)
+                    onUIChange: function () {
+                        SliderView.prototype.onUIChange.apply(this, arguments);
+                        console.log(this.value);
                         io.emit('servo', {
                             value: this.value
                         })
                     },
 
-                    setSlider: function () {
-                        SliderView.prototype.setSlider.call(this, this.model.get('value'))
+                    setValue: function () {
+                        SliderView.prototype.setValue.call(this, this.model.get('value'))
                     },
 
                     model: servo,
 
                     modelEvents: {
-                        'change': 'setSlider'
-                    }
+                        'change': 'setValue'
+                    },
+
+                    onShow: function () {
+                        this.setValue()
+                    },
                 })
             ]
         });
 
         viewPort.show(new HomePage());
-    },
+    }
 };
-
 
 var NavView = Marionette.ItemView.extend({
     template: require('../tmpl/nav.hbs'),
 
     templateHelpers: function () {
         return {
-            productName: 'Engine Lab'
+            productName: 'Luke\'s Engine Lab'
         };
     },
 
@@ -182,7 +188,7 @@ var showView = function (viewWrapperFunc) {
 };
 
 var pages = {
-    home: showView(Pages.home),
+    home: showView(Pages.home)
 };
 pages['*catchall'] = pages.home;
 
