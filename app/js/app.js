@@ -42,7 +42,7 @@ var CameraModel = Backbone.Model.extend({
 
     initialize: function () {
         io.on('frame', function (data) {
-            console.log('frame')
+            console.log('frame');
             this.set(data)
         }.bind(this))
     }
@@ -50,7 +50,7 @@ var CameraModel = Backbone.Model.extend({
 
 var servo = new ServoModel();
 var camera = new CameraModel();
-var users= new UsersModel();
+var users = new UsersModel();
 io.emit('sync');
 
 var RowView = Marionette.LayoutView.extend({
@@ -89,9 +89,9 @@ var CameraView = Marionette.ItemView.extend({
         this.canvas = this.$el.find('canvas')[0];
         this.context = this.canvas.getContext('2d');
         this.image = new Image();
+        this.canvas.width = this.image.width = this.context.width = 620;
+        this.canvas.height = this.image.height = this.context.height = 480;
         this.image.onload = function () {
-            this.context.height = this.image.height;
-            this.context.width = this.image.width;
             this.context.drawImage(this.image, 0, 0, 620, 480);
         }.bind(this)
     },

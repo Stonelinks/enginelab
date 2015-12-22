@@ -4,6 +4,7 @@
 
 var WEBSERVER_PORT = 8002;
 var SERVO_PIN = 11;
+var VIDEO_DEVICE = "/dev/video1";
 
 var express = require('express');
 var http = require('http');
@@ -15,7 +16,7 @@ var board = new five.Board();
 
 var cam = require('linuxcam');
 var Jpeg = require('jpeg-fresh').Jpeg;
-cam.start("/dev/video0", 620, 480);
+cam.start(VIDEO_DEVICE, 620, 480);
 var events = require('events');
 var frameEventEmitter = new events.EventEmitter();
 setInterval(function () {
