@@ -23,6 +23,18 @@ var ServoModel = Backbone.Model.extend({
     }
 });
 
+var UsersModel = Backbone.Model.extend({
+    defaults: {
+        value: '???'
+    },
+
+    initialize: function () {
+        io.on('users', function (data) {
+            this.set(data)
+        }.bind(this))
+    }
+});
+
 var CameraModel = Backbone.Model.extend({
     defaults: {
         frame: null
@@ -37,7 +49,8 @@ var CameraModel = Backbone.Model.extend({
 });
 
 var servo = new ServoModel();
-var camera= new CameraModel();
+var camera = new CameraModel();
+var users= new UsersModel();
 io.emit('sync');
 
 var RowView = Marionette.LayoutView.extend({
@@ -69,11 +82,25 @@ var CameraView = Marionette.ItemView.extend({
     template: require('../tmpl/camera.hbs'),
 
     modelEvents: {
-        'change': 'render'
+        'change': 'updateFrame'
     },
 
-    onRender: function() {
-        this.$el.find('img').attr('src', 'data:image/jpg;base64,' + this.model.get('frame'));
+    onShow: function () {
+        this.canvas = this.$el.find('canvas')[0];
+        this.context = this.canvas.getContext('2d');
+        this.image = new Image();
+        this.image.onload = function () {
+            this.context.height = this.image.height;
+            this.context.width = this.image.width;
+            this.context.drawImage(this.image, 0, 0, 620, 480);
+        }.bind(this)
+    },
+
+    updateFrame: function () {
+        try {
+            this.image.src = "data:image/jpeg;base64," + this.model.get('frame');
+        } catch (e) {
+        }
     }
 });
 
@@ -175,7 +202,7 @@ var NavView = Marionette.ItemView.extend({
 
     templateHelpers: function () {
         return {
-            productName: 'Luke\'s Engine Lab'
+            productName: 'luke\'s enginelab'
         };
     },
 
@@ -193,6 +220,10 @@ var NavView = Marionette.ItemView.extend({
         }
         this.$el.find(activeButton).addClass(activeClass);
         this.$el.find(navButtons).not(activeButton).addClass(inactiveClass);
+    },
+
+    modelEvents: {
+        'change': 'render'
     }
 });
 
@@ -205,7 +236,9 @@ app.addRegions({
 });
 
 // set up nav
-var nav = new NavView();
+var nav = new NavView({
+    model: users
+});
 app.addInitializer(function () {
     app.getRegion('nav').show(nav);
 });

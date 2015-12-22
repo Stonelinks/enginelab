@@ -15,14 +15,15 @@ var board = new five.Board();
 
 var cam = require('linuxcam');
 var Jpeg = require('jpeg-fresh').Jpeg;
-cam.start("/dev/video1", 620, 480);
-var cameraFrame = null;
+cam.start("/dev/video0", 620, 480);
+var events = require('events');
+var frameEventEmitter = new events.EventEmitter();
 setInterval(function () {
     var frame = cam.frame();
     var jpeg = new Jpeg(frame.data, frame.width, frame.height, 'rgb');
     var jpeg_frame = jpeg.encodeSync();
-    cameraFrame = jpeg_frame.toString('base64')
-}, 200);
+    frameEventEmitter.emit('frame', jpeg_frame.toString('base64'))
+}, 100);
 
 var server = http.createServer(app);
 
@@ -39,14 +40,22 @@ app.io.attach(server);
 board.on("ready", function() {
     var servo = new five.Servo(SERVO_PIN);
 
+    var users = 0;
     var servoPos = 90;
     servo.to(servoPos);
 
     io.on('connection', function (socket) {
+        users++;
+        socket.broadcast.emit('users', {
+            value: users
+        });
         socket.on('sync', function () {
             console.log('sync');
             socket.emit('servo', {
                 value: servoPos
+            });
+            socket.emit('users', {
+                value: users
             });
         });
 
@@ -59,14 +68,20 @@ board.on("ready", function() {
             })
         });
 
-        var cameraInterval = setInterval(function () {
+        var sendFrame = function (frame) {
             socket.emit("frame", {
-                frame: cameraFrame
+                frame: frame
             });
-        }, 200);
+        }
+
+        frameEventEmitter.addListener('frame', sendFrame)
 
         socket.on('disconnect', function () {
-            clearInterval(cameraInterval)
+            frameEventEmitter.removeListener('frame', sendFrame)
+            users--;
+            socket.broadcast.emit('users', {
+                value: users
+            });
         })
     });
 
