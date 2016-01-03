@@ -29,7 +29,7 @@ setInterval(function () {
     var jpeg = new Jpeg(frame.data, frame.width, frame.height, 'rgb');
     var jpeg_frame = jpeg.encodeSync();
     frameEventEmitter.emit('frame', jpeg_frame.toString('base64'))
-}, 100);
+}, 200);
 
 var server = http.createServer(app);
 
@@ -43,7 +43,27 @@ app.get('/', function (req, res) {
 
 app.io.attach(server);
 
+function get_moving_average(period) {
+    var nums = [];
+    return function (num) {
+        nums.push(num);
+        if (nums.length > period) {
+            nums.splice(0, 1);
+        }
+        var sum = 0;
+        for (var i = 0; i < nums.length; i++) {
+            sum += nums[i];
+        }
+        var n = period;
+        if (nums.length < period) {
+            n = nums.length;
+        }
+        return (sum / n);
+    }
+}
+
 board.on("ready", function () {
+    board.samplingInterval(1);
     var servo = new five.Servo(SERVO_PIN);
     var tachSwitch = new five.Switch(TACH_PIN);
 
@@ -52,6 +72,7 @@ board.on("ready", function () {
     servo.to(servoPos);
 
     var rpmEventEmitter = new events.EventEmitter();
+    var rpmAverage = get_moving_average(10);
     var rpm = 0;
     var lastClick = new Date();
     var debounceZeroRPM = _.debounce(function () {
@@ -62,14 +83,14 @@ board.on("ready", function () {
         var diff = thisClick - lastClick;
         var newRPM = parseInt(1000 * 60 / diff);
         if (Math.abs(newRPM - rpm) < TACH_MAX_DELTA || rpm == 0) {
-            rpm = newRPM
+            rpm = rpmAverage(newRPM)
         }
         lastClick = thisClick;
         debounceZeroRPM()
     });
     setInterval(function () {
         rpmEventEmitter.emit('rpm', rpm)
-    }, 120);
+    }, 300);
 
     io.on('connection', function (socket) {
         users++;

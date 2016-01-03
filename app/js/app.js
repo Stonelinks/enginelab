@@ -249,13 +249,14 @@ var HighChart = Marionette.ItemView.extend({
                     color: '#808080'
                 }]
             },
-            tooltip: {
-                formatter: function () {
-                    return '<b>' + this.series.name + '</b><br/>' +
-                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
-                        Highcharts.numberFormat(this.y, 2);
-                }
-            },
+            tooltip: false,
+            //tooltip: {
+            //    formatter: function () {
+            //        return '<b>' + this.series.name + '</b><br/>' +
+            //            Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+            //            Highcharts.numberFormat(this.y, 2);
+            //    }
+            //},
             legend: {
                 enabled: false
             },
@@ -280,7 +281,6 @@ var Pages = {
                 SliderView.extend({
                     onUIChange: function () {
                         SliderView.prototype.onUIChange.apply(this, arguments);
-                        console.log(this.value);
                         io.emit('servo', {
                             value: this.value
                         })
@@ -313,7 +313,6 @@ var Pages = {
                         var chart = this.chartInstance;
                         tach.on('update', function () {
                             var x = (new Date()).getTime();
-                            console.log(tach.get('rpm'))
                             chart.series[0].addPoint([x, tach.get('rpm')]);
                         })
                     },
