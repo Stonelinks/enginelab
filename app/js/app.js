@@ -7,6 +7,13 @@ var _ = require('underscore');
 var Backbone = require('backbone');
 Backbone.$ = window.$ = window.jQuery = $;
 var Marionette = require('backbone.marionette');
+var Highcharts = require('highcharts-browserify');
+
+Highcharts.setOptions({
+    global: {
+        useUTC: false
+    }
+});
 require('bootstrap');
 
 var io = require('socket.io-client')(window.location.origin);
@@ -42,8 +49,20 @@ var CameraModel = Backbone.Model.extend({
 
     initialize: function () {
         io.on('frame', function (data) {
-            console.log('frame');
             this.set(data)
+        }.bind(this))
+    }
+});
+
+var TachModel = Backbone.Model.extend({
+    defaults: {
+        rpm: null
+    },
+
+    initialize: function () {
+        io.on('rpm', function (data) {
+            this.set(data);
+            this.trigger('update', data);
         }.bind(this))
     }
 });
@@ -51,6 +70,7 @@ var CameraModel = Backbone.Model.extend({
 var servo = new ServoModel();
 var camera = new CameraModel();
 var users = new UsersModel();
+var tach = new TachModel();
 io.emit('sync');
 
 var RowView = Marionette.LayoutView.extend({
@@ -177,6 +197,76 @@ var SliderView = Marionette.ItemView.extend({
     }
 });
 
+
+var HighChart = Marionette.ItemView.extend({
+    className: 'tach-chart',
+
+    getOptionAndResult: function (thing) {
+        var realThing = this.getOption(thing);
+        return _.isFunction(realThing) ? realThing.call(this) : realThing;
+    },
+
+    template: false,
+
+    title: undefined,
+
+    yAxisTitle: undefined,
+
+    seriesName: undefined,
+
+    onShow: function (options) {
+        var self = this;
+
+        this.chartInstance = null;
+
+        this.$el.highcharts({
+            chart: {
+                type: 'line',
+                animation: Highcharts.svg, // don't animate in old IE
+                marginRight: 10,
+                events: {
+                    load: function () {
+                        self.chartInstance = this;
+                        self.getOptionAndResult.call(self, 'onLoad');
+                        self.$el.find('text[text-anchor="end"]:contains(Highcharts)').hide();
+                    }
+                }
+            },
+            title: {
+                text: this.getOptionAndResult('title')
+            },
+            xAxis: {
+                type: 'datetime',
+                tickPixelInterval: 150
+            },
+            yAxis: {
+                title: {
+                    text: this.getOptionAndResult('yAxisTitle')
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 1,
+                    color: '#808080'
+                }]
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.series.name + '</b><br/>' +
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+                        Highcharts.numberFormat(this.y, 2);
+                }
+            },
+            legend: {
+                enabled: false
+            },
+            exporting: {
+                enabled: false
+            },
+            series: this.getOptionAndResult('series')
+        });
+    }
+});
+
 var Pages = {
 
     home: function (viewPort) {
@@ -208,7 +298,27 @@ var Pages = {
 
                     onShow: function () {
                         this.setValue()
+                    }
+                }),
+
+                HighChart.extend({
+
+                    model: tach,
+
+                    title: 'Tachometer',
+                    yAxisTitle: 'RPM',
+
+                    onLoad: function () {
+                        var tach = this.model;
+                        var chart = this.chartInstance;
+                        tach.on('update', function () {
+                            var x = (new Date()).getTime();
+                            console.log(tach.get('rpm'))
+                            chart.series[0].addPoint([x, tach.get('rpm')]);
+                        })
                     },
+
+                    series: [{name: 'RPM'}]
                 })
             ]
         });
