@@ -18,6 +18,19 @@ require('bootstrap');
 
 var io = require('socket.io-client')(window.location.origin);
 
+var ControllerModel = Backbone.Model.extend({
+    defaults: {
+        value: null
+    },
+
+    initialize: function () {
+        io.on('controller', function (data) {
+            console.log('fucker')
+            this.set(data)
+        }.bind(this))
+    }
+});
+
 var ServoModel = Backbone.Model.extend({
     defaults: {
         value: null
@@ -67,6 +80,7 @@ var TachModel = Backbone.Model.extend({
     }
 });
 
+var controller = new ControllerModel();
 var servo = new ServoModel();
 var camera = new CameraModel();
 var users = new UsersModel();
@@ -148,7 +162,7 @@ var SliderView = Marionette.ItemView.extend({
     template: require('../tmpl/slider.hbs'),
 
     min: 0,
-    max: 180,
+    max: 100,
     step: 1,
 
     templateHelpers: function () {
@@ -199,7 +213,7 @@ var SliderView = Marionette.ItemView.extend({
 
 
 var HighChart = Marionette.ItemView.extend({
-    className: 'tach-chart',
+    className: 'controller-chart',
 
     getOptionAndResult: function (thing) {
         var realThing = this.getOption(thing);
@@ -258,7 +272,7 @@ var HighChart = Marionette.ItemView.extend({
             //    }
             //},
             legend: {
-                enabled: false
+                enabled: true
             },
             exporting: {
                 enabled: false
@@ -279,6 +293,37 @@ var Pages = {
                 }),
 
                 SliderView.extend({
+                    min: 500,
+                    max: 1500,
+
+                    onUIChange: function () {
+                        SliderView.prototype.onUIChange.apply(this, arguments);
+                        var data = {
+                            value: this.value
+                        }
+                        io.emit('controller', data)
+                        controller.set(data)
+                    },
+
+                    setValue: function () {
+                        SliderView.prototype.setValue.call(this, this.model.get('value'))
+                    },
+
+                    model: controller,
+
+                    modelEvents: {
+                        'change': 'setValue'
+                    },
+
+                    onShow: function () {
+                        this.setValue()
+                    }
+                }),
+
+                SliderView.extend({
+                    min: 0,
+                    max: 180,
+
                     onUIChange: function () {
                         SliderView.prototype.onUIChange.apply(this, arguments);
                         io.emit('servo', {
@@ -303,21 +348,20 @@ var Pages = {
 
                 HighChart.extend({
 
-                    model: tach,
-
-                    title: 'Tachometer',
-                    yAxisTitle: 'RPM',
-
                     onLoad: function () {
-                        var tach = this.model;
                         var chart = this.chartInstance;
-                        tach.on('update', function () {
+                        var _update = function () {
                             var x = (new Date()).getTime();
                             chart.series[0].addPoint([x, tach.get('rpm')]);
-                        })
+                            chart.series[1].addPoint([x, controller.get('value')]);
+                            chart.series[2].addPoint([x, servo.get('value')]);
+                        }
+                        tach.on('update', _update)
+                        controller.on('change', _update)
+                        servo.on('change', _update)
                     },
 
-                    series: [{name: 'RPM'}]
+                    series: [{name: 'Sensed RPM'}, {name: 'Commanded RPM'}, {name: 'Controller Output'}]
                 })
             ]
         });
