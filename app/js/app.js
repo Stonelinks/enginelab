@@ -164,6 +164,10 @@ var Pages = {
 
         var HomePage = RowView.extend({
             childViews: [
+                CameraView.extend({
+                    model: camera
+                }),
+
                 SliderView.extend({
                     onUIChange: function () {
                         SliderView.prototype.onUIChange.apply(this, arguments);
@@ -186,9 +190,6 @@ var Pages = {
                     onShow: function () {
                         this.setValue()
                     },
-                }),
-                CameraView.extend({
-                    model: camera
                 })
             ]
         });

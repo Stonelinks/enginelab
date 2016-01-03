@@ -4,6 +4,7 @@
 
 var WEBSERVER_PORT = 8002;
 var SERVO_PIN = 11;
+var TACH_PIN = 12;
 var VIDEO_DEVICE = "/dev/video1";
 
 var express = require('express');
@@ -12,7 +13,9 @@ var socket_io = require("socket.io");
 var app = express();
 
 var five = require("johnny-five");
-var board = new five.Board();
+var board = new five.Board({
+    repl: false
+});
 
 var cam = require('linuxcam');
 var Jpeg = require('jpeg-fresh').Jpeg;
@@ -40,10 +43,24 @@ app.io.attach(server);
 
 board.on("ready", function() {
     var servo = new five.Servo(SERVO_PIN);
+    var tachSwitch = new five.Switch(TACH_PIN);
 
     var users = 0;
     var servoPos = 90;
     servo.to(servoPos);
+
+    var rpmEventEmitter = new events.EventEmitter();
+    var rpm = 0;
+    var lastClick = new Date();
+    tachSwitch.on("open", function() {
+        var thisClick = new Date();
+        var diff = thisClick - lastClick;
+        rpm = parseInt(1000 * 60 / diff);
+        lastClick = thisClick
+    });
+    setInterval(function () {
+        rpmEventEmitter.emit('rpm', rpm)
+    }, 100);
 
     io.on('connection', function (socket) {
         users++;
@@ -73,12 +90,20 @@ board.on("ready", function() {
             socket.emit("frame", {
                 frame: frame
             });
-        }
+        };
 
-        frameEventEmitter.addListener('frame', sendFrame)
+        var sendRPM = function (frame) {
+            socket.emit("rpm", {
+                rpm: rpm
+            });
+        };
+
+        frameEventEmitter.addListener('frame', sendFrame);
+        rpmEventEmitter.addListener('rpm', sendRPM);
 
         socket.on('disconnect', function () {
-            frameEventEmitter.removeListener('frame', sendFrame)
+            frameEventEmitter.removeListener('frame', sendFrame);
+            rpmEventEmitter.removeListener('rpm', sendRPM);
             users--;
             socket.broadcast.emit('users', {
                 value: users
