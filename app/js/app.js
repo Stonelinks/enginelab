@@ -14,6 +14,7 @@ Highcharts.setOptions({
         useUTC: false
     }
 });
+
 require('bootstrap');
 
 var io = require('socket.io-client')(window.location.origin);
@@ -25,7 +26,6 @@ var ControllerModel = Backbone.Model.extend({
 
     initialize: function () {
         io.on('controller', function (data) {
-            console.log('fucker')
             this.set(data)
         }.bind(this))
     }
@@ -167,6 +167,8 @@ var SliderView = Marionette.ItemView.extend({
 
     templateHelpers: function () {
         return {
+            title: this.getOption('title'),
+            disabled: this.getOption('disabled'),
             min: this.getOption('min'),
             max: this.getOption('max'),
             step: this.getOption('step')
@@ -183,8 +185,10 @@ var SliderView = Marionette.ItemView.extend({
 
     value: null,
     onUIChange: function () {
-        this.value = parseInt(this.$el.find('input').val());
-        this.$el.find('small').text(this.value)
+        if (!this.getOption('disabled')) {
+            this.value = parseInt(this.$el.find('input').val());
+            this.$el.find('small').text(this.value)
+        }
     },
 
     setValue: function (value) {
@@ -293,6 +297,9 @@ var Pages = {
                 }),
 
                 SliderView.extend({
+
+                    title: 'Slide to set RPM',
+
                     min: 500,
                     max: 1500,
 
@@ -321,15 +328,12 @@ var Pages = {
                 }),
 
                 SliderView.extend({
+
+                    title: 'Current Servo Position',
+
                     min: 0,
                     max: 180,
-
-                    onUIChange: function () {
-                        SliderView.prototype.onUIChange.apply(this, arguments);
-                        io.emit('servo', {
-                            value: this.value
-                        })
-                    },
+                    disabled: true,
 
                     setValue: function () {
                         SliderView.prototype.setValue.call(this, this.model.get('value'))
@@ -347,6 +351,8 @@ var Pages = {
                 }),
 
                 HighChart.extend({
+                    title: 'Tachometer',
+                    yAxisTitle: 'RPM',
 
                     onLoad: function () {
                         var chart = this.chartInstance;
@@ -354,14 +360,30 @@ var Pages = {
                             var x = (new Date()).getTime();
                             chart.series[0].addPoint([x, tach.get('rpm')]);
                             chart.series[1].addPoint([x, controller.get('value')]);
-                            chart.series[2].addPoint([x, servo.get('value')]);
                         }
                         tach.on('update', _update)
-                        controller.on('change', _update)
-                        servo.on('change', _update)
                     },
 
-                    series: [{name: 'Sensed RPM'}, {name: 'Commanded RPM'}, {name: 'Controller Output'}]
+                    series: [
+                        {name: 'Sensed RPM'},
+                        {name: 'Commanded RPM'}
+                    ]
+                }),
+
+                HighChart.extend({
+                    title: 'Controller Output',
+                    yAxisTitle: 'Angle (deg)',
+
+                    onLoad: function () {
+                        var chart = this.chartInstance;
+                        var _update = function () {
+                            var x = (new Date()).getTime();
+                            chart.series[0].addPoint([x, servo.get('value')]);
+                        }
+                        tach.on('update', _update)
+                    },
+
+                    series: [{name: 'Servo Position'}]
                 })
             ]
         });
@@ -375,30 +397,16 @@ var NavView = Marionette.ItemView.extend({
 
     templateHelpers: function () {
         return {
+            users: users.get('value'),
+            rpm: parseInt(tach.get('rpm')),
             productName: 'luke\'s enginelab'
         };
     },
 
-    onRender: function () {
-        var activeClass = 'btn-primary';
-        var inactiveClass = 'btn-default';
-        var navButtons = '.navbar-nav a';
-
-        this.$el.find(navButtons).removeClass(activeClass);
-        var activeButton;
-        if (!window.location.hash.length) {
-            activeButton = navButtons + '[href="#home"]';
-        } else {
-            activeButton = navButtons + '[href="' + window.location.hash + '"]';
-        }
-        this.$el.find(activeButton).addClass(activeClass);
-        this.$el.find(navButtons).not(activeButton).addClass(inactiveClass);
-    },
-
-    modelEvents: {
-        'change': 'render'
+    onShow: function () {
+        setInterval(this.render.bind(this), 500)
     }
-});
+})
 
 var app = new Marionette.Application();
 window.app = app;
@@ -410,7 +418,7 @@ app.addRegions({
 
 // set up nav
 var nav = new NavView({
-    model: users
+    model: tach
 });
 app.addInitializer(function () {
     app.getRegion('nav').show(nav);
