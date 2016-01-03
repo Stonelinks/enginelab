@@ -7,6 +7,7 @@ var _ = require('underscore');
 var Backbone = require('backbone');
 Backbone.$ = window.$ = window.jQuery = $;
 var Marionette = require('backbone.marionette');
+var T = require("timbre/timbre.dev");
 var Highcharts = require('highcharts-browserify');
 
 Highcharts.setOptions({
@@ -73,6 +74,20 @@ var TachModel = Backbone.Model.extend({
     },
 
     initialize: function () {
+
+        var glide = T("param");
+        var vco = T("saw", {
+            freq: glide,
+            mul: 0.21
+        }).play();
+
+        T("interval", {interval: 500}, function (count) {
+            var f = parseInt(this.get('rpm')) * .08;
+            if (f) {
+                glide.sinTo(f, "400ms");
+            }
+        }.bind(this)).start();
+
         io.on('rpm', function (data) {
             this.set(data);
             this.trigger('update', data);
