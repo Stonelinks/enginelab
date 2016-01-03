@@ -85,14 +85,33 @@ var CameraView = Marionette.ItemView.extend({
         'change': 'updateFrame'
     },
 
+    width: null,
+    height: null,
+
+    updateWidthAndHeight: function () {
+        var rect = this.$el.find('canvas')[0].getBoundingClientRect();
+        this.width = rect.width;
+        this.height = rect.height
+    },
+
+    onWindowResize: function () {
+        this.updateWidthAndHeight();
+        this.canvas.width = this.context.width = this.image.width = this.width;
+        this.canvas.height = this.context.height = this.image.height = this.height;
+    },
+
+
+    initialize: function () {
+        this.onWindowResize = this.onWindowResize.bind(this);
+    },
+
     onShow: function () {
         this.canvas = this.$el.find('canvas')[0];
         this.context = this.canvas.getContext('2d');
         this.image = new Image();
-        this.canvas.width = this.image.width = this.context.width = 620;
-        this.canvas.height = this.image.height = this.context.height = 480;
+        this.onWindowResize();
         this.image.onload = function () {
-            this.context.drawImage(this.image, 0, 0, 620, 480);
+            this.context.drawImage(this.image, 0, 0, this.width, this.height);
         }.bind(this)
     },
 
