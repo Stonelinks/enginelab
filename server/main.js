@@ -5,10 +5,12 @@
 var WEBSERVER_PORT = 8002;
 var SERVO_PIN = 11;
 var TACH_PIN = 12;
+var TACH_MAX_DELTA = 500;
 var VIDEO_DEVICE = "/dev/video1";
 
 var express = require('express');
 var http = require('http');
+var _ = require('underscore');
 var socket_io = require("socket.io");
 var app = express();
 
@@ -41,7 +43,7 @@ app.get('/', function (req, res) {
 
 app.io.attach(server);
 
-board.on("ready", function() {
+board.on("ready", function () {
     var servo = new five.Servo(SERVO_PIN);
     var tachSwitch = new five.Switch(TACH_PIN);
 
@@ -52,15 +54,22 @@ board.on("ready", function() {
     var rpmEventEmitter = new events.EventEmitter();
     var rpm = 0;
     var lastClick = new Date();
-    tachSwitch.on("open", function() {
+    var debounceZeroRPM = _.debounce(function () {
+        rpm = 0
+    }, 500);
+    tachSwitch.on("open", function () {
         var thisClick = new Date();
         var diff = thisClick - lastClick;
-        rpm = parseInt(1000 * 60 / diff);
-        lastClick = thisClick
+        var newRPM = parseInt(1000 * 60 / diff);
+        if (Math.abs(newRPM - rpm) < TACH_MAX_DELTA || rpm == 0) {
+            rpm = newRPM
+        }
+        lastClick = thisClick;
+        debounceZeroRPM()
     });
     setInterval(function () {
         rpmEventEmitter.emit('rpm', rpm)
-    }, 100);
+    }, 120);
 
     io.on('connection', function (socket) {
         users++;
@@ -81,7 +90,7 @@ board.on("ready", function() {
             console.log(data);
             servoPos = parseInt(data.value);
             servo.to(servoPos);
-            socket.broadcast.emit('servo',  {
+            socket.broadcast.emit('servo', {
                 value: servoPos
             })
         });
@@ -92,7 +101,7 @@ board.on("ready", function() {
             });
         };
 
-        var sendRPM = function (frame) {
+        var sendRPM = function (rpm) {
             socket.emit("rpm", {
                 rpm: rpm
             });
