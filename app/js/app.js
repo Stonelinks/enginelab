@@ -69,7 +69,7 @@ var CameraModel = Backbone.Model.extend({
 
 var TachModel = Backbone.Model.extend({
     defaults: {
-        rpm: null
+        rpm: '???'
     },
 
     initialize: function () {
@@ -125,7 +125,7 @@ var CameraView = Marionette.ItemView.extend({
     updateWidthAndHeight: function () {
         var rect = this.$el.find('canvas')[0].getBoundingClientRect();
         this.width = rect.width;
-        this.height = rect.height
+        this.height = rect.height;
     },
 
     onWindowResize: function () {
@@ -300,8 +300,8 @@ var Pages = {
 
                     title: 'Slide to set RPM',
 
-                    min: 500,
-                    max: 1500,
+                    min: 400,
+                    max: 1000,
 
                     onUIChange: function () {
                         SliderView.prototype.onUIChange.apply(this, arguments);
