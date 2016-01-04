@@ -1,0 +1,27 @@
+<strong>What is this?</strong>
+<p class="message">
+    This is live control over a stirling engine in my apartment. I built the engine and hooked it up to the internet
+    mostly for fun, but also because it seemed like a great idea to give anonymous strangers on the internet control
+    over an open flame
+    10 feet away
+    from where I sleep. Seriously though, I turn this off if I'm away since I don't want it burning
+    the place down when I'm gone.
+</p>
+<strong>How does it work?</strong>
+<p class="message">
+    Stirling engines are pretty simple. They're powered by temperature differences. This engine has a small alcohol
+    burner to provide heat. The burner is attached to a servo so it can move around underneath the engine. When
+    the burner's flame is underneath the cylinder, the temperature difference increases so the engine speeds up.
+    Similarly when the burner is moved away, it cools and slows down.
+</p>
+<p class="message">
+    The commanded RPM (set with the slider below) is fed into a simple PID controller that uses RPM as feedback. This
+    controller then moves the servo (and thus the flame) around to change or maintain engine speed. You can check
+    out graphs of all this stuff below as the engine runs.
+</p>
+<strong>What code runs it?</strong>
+<p class="message">
+    This entire thing is powered by maybe a couple hundred lines of unfancy javascript. All hardware IO is done with
+    firmata because I don't feel like writing firmware. If you're an interested turbo nerd, the git repo for it is <a
+        href="https://github.com/Stonelinks/enginelab" target="_blank">here</a>.
+</p>

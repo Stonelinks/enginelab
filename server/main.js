@@ -179,6 +179,9 @@ board.on("ready", function () {
             rpmEventEmitter.removeListener('rpm', sendRPM);
             engineController.removeListener('update', sendControllerUpdate);
             users--;
+            if (users == 0) {
+                engineController.setTargetRPM(config.engine_controller.DEFAULT_COMMAND_RPM)
+            }
             console.log('users:', users);
             socket.broadcast.emit('users', {
                 value: users

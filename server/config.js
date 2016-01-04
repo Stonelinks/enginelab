@@ -14,7 +14,7 @@ module.exports = {
     },
     engine_controller: {
         UPDATE_INTERVAL_MS: 20,
-        DEFAULT_COMMAND_RPM: 400,
+        DEFAULT_COMMAND_RPM: 500,
         SERVO_MAX_THROTTLE: 23,
         SERVO_MIN_THROTTLE: 65,
         GAINS: {

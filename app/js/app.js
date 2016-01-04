@@ -76,13 +76,13 @@ var TachModel = Backbone.Model.extend({
     initialize: function () {
 
         var glide = T("param");
-        var vco = T("saw", {
+        var vco = T("square", {
             freq: glide,
             mul: 0.21
         }).play();
 
         T("interval", {interval: 500}, function (count) {
-            var f = parseInt(this.get('rpm')) * .08;
+            var f = parseInt(this.get('rpm')) * .06;
             if (f) {
                 glide.sinTo(f, "400ms");
             }
@@ -307,6 +307,11 @@ var Pages = {
 
         var HomePage = RowView.extend({
             childViews: [
+
+                Marionette.ItemView.extend({
+                    template: require('../tmpl/greetings.hbs')
+                }),
+
                 CameraView.extend({
                     model: camera
                 }),
@@ -315,7 +320,7 @@ var Pages = {
 
                     title: 'Slide to set RPM',
 
-                    min: 400,
+                    min: 500,
                     max: 1000,
 
                     onUIChange: function () {
@@ -344,7 +349,7 @@ var Pages = {
 
                 SliderView.extend({
 
-                    title: 'Current Servo Position',
+                    title: 'Servo Position (view only)',
 
                     min: 0,
                     max: 180,
