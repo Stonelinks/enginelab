@@ -76,15 +76,15 @@ var TachModel = Backbone.Model.extend({
     initialize: function () {
 
         var glide = T("param");
-        var vco = T("square", {
+        var vco = T("saw", {
             freq: glide,
             mul: 0.21
-        }).play();
+        }).play()
 
         T("interval", {interval: 500}, function (count) {
-            var f = parseInt(this.get('rpm')) * .06;
+            var f = parseInt(this.get('rpm')) * .05;
             if (f) {
-                glide.sinTo(f, "400ms");
+                glide.sinTo(f, "500ms")
             }
         }.bind(this)).start();
 

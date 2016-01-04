@@ -10,7 +10,7 @@ module.exports = {
     TACH_MAX_DELTA: 500,
     camera: {
         DEVICE: "/dev/video1",
-        CAPTURE_INTERVAL_MS: 200
+        CAPTURE_INTERVAL_MS: 120
     },
     engine_controller: {
         UPDATE_INTERVAL_MS: 20,
@@ -18,9 +18,9 @@ module.exports = {
         SERVO_MAX_THROTTLE: 23,
         SERVO_MIN_THROTTLE: 65,
         GAINS: {
-            k_p: -0.2,
-            k_i: 0,
-            k_d: 0.1
+            k_p: -0.25,
+            k_i: -0.000025,
+            k_d: 0.2
         }
     }
 }
